@@ -495,6 +495,33 @@
       return this;
     },
 
+    // Fetch needs states
+    // 0  = not fetched yet
+    // 1  = fetched or re-fetched (waiting for response ?)
+    // 2  = succeeded
+    // -1 = failed
+    _state: 0,
+    
+    _stateHistory: [],
+    
+    getState: function() {
+      return this._state;
+    },
+    
+    _setState: function(state) {
+      this._stateLog.push(this._state = state);
+      this.trigger('statechange');
+      return this;
+    },
+    
+    getStateCount: function() {
+      return this._stateHistory.length;
+    },
+    
+    getStateHistory: function() {
+      return this._stateHistory;
+    },
+    
     // Fetch the default set of models for this collection, refreshing the
     // collection when they arrive. If `add: true` is passed, appends the
     // models to the collection instead of refreshing.
@@ -502,11 +529,16 @@
       options || (options = {});
       var collection = this;
       var success = options.success;
+      collection._setState(1);
       options.success = function(resp) {
+        collection._setState(2);
         collection[options.add ? 'add' : 'refresh'](collection.parse(resp), options);
         if (success) success(collection, resp);
       };
-      options.error = wrapError(options.error, collection, options);
+      options.error = function() {
+        collection._setState(-1);
+        wrapError(options.error, collection, options);
+      };
       (this.sync || Backbone.sync).call(this, 'read', this, options);
       return this;
     },
