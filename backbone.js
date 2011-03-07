@@ -509,7 +509,7 @@
     },
     
     _setState: function(state) {
-      this._stateLog.push(this._state = state);
+      this._stateHistory.push(this._state = state);
       this.trigger('statechange');
       return this;
     },
