@@ -502,14 +502,15 @@
     // -1 = failed
     _state: 0,
     
-    _stateHistory: [],
+    _stateHistory: false,
     
     getState: function() {
       return this._state;
     },
     
     _setState: function(state) {
-      this._stateHistory.push(this._state = state);
+      this._state = state;
+      this._stateHistory.push(state);
       this.trigger('statechange');
       return this;
     },
@@ -579,6 +580,7 @@
     // Reset all internal state. Called when the collection is refreshed.
     _reset : function(options) {
       this.length = 0;
+      this._stateHistory = this._stateHistory || [];
       this.models = [];
       this._byId  = {};
       this._byCid = {};
