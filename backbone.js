@@ -398,6 +398,11 @@
   // its models in sort order, as they're added and removed.
   Backbone.Collection = function(models, options) {
     options || (options = {});
+    
+    // This should not be reseted
+    this._state = 0;
+    this._stateHistory = [];
+    
     if (options.comparator) {
       this.comparator = options.comparator;
       delete options.comparator;
@@ -500,7 +505,7 @@
     // 1  = fetched or re-fetched (waiting for response ?)
     // 2  = succeeded
     // -1 = failed
-    _state: 0,
+    _state: false,
     
     _stateHistory: false,
     
@@ -509,9 +514,8 @@
     },
     
     _setState: function(state) {
-      this._state = state;
-      this._stateHistory.push(state);
-      this.trigger('statechange');
+      this._stateHistory.push(this._state = state);
+      this.trigger('statechange', state);
       return this;
     },
     
@@ -536,10 +540,13 @@
         collection[options.add ? 'add' : 'refresh'](collection.parse(resp), options);
         if (success) success(collection, resp);
       };
-      options.error = function() {
+      var error = options.error;
+      options.error = function(model, resp, options) {
         collection._setState(-1);
-        wrapError(options.error, collection, options);
+        return error ? error(model, resp, options) : false;
       };
+      options.error = wrapError(options.error, collection, options);
+      
       (this.sync || Backbone.sync).call(this, 'read', this, options);
       return this;
     },
@@ -580,7 +587,6 @@
     // Reset all internal state. Called when the collection is refreshed.
     _reset : function(options) {
       this.length = 0;
-      this._stateHistory = this._stateHistory || [];
       this.models = [];
       this._byId  = {};
       this._byCid = {};
